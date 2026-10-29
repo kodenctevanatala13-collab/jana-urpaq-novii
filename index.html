@@ -62,6 +62,11 @@
     }
   </script>
   <style>
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+    }
     body {
       background-color: #F8FAFC;
       color: #0F172A;
@@ -9511,6 +9516,9 @@ function getReportUrgency(report, reportState) {
       const orgStatus = rosterApprovals?.orgStaff?.status || 'approved';
       const kidsStatus = rosterApprovals?.kidsTeams?.status || 'approved';
 
+      const isKidsAwaiting = kidsStatus === 'pending' || kidsStatus === 'revision';
+      const isStaffAwaiting = trainStatus === 'pending' || orgStatus === 'pending' || trainStatus === 'revision' || orgStatus === 'revision';
+
       const getStatusBadge = (st) => {
         if (st === 'approved') return { text: '✅ Утверждено', cls: 'bg-emerald-100 text-emerald-900 border-emerald-300' };
         if (st === 'pending') return { text: '⏳ Ждет Асхата', cls: 'bg-amber-100 text-amber-950 border-amber-400 animate-pulse' };
@@ -9544,8 +9552,8 @@ function getReportUrgency(report, reportState) {
               </div>
             </div>
 
-            {/* БЛОК ДАТ И ПАРАМЕТРОВ ПОТОКА: Редактирует ТОЛЬКО АДМИН, для остальных - красивый информационный вид */}
-            {isShiftAdmin ? (
+            {/* БЛОК ДАТ И ПАРАМЕТРОВ ПОТОКА: Редактирует ТОЛЬКО АДМИН */}
+            {isShiftAdmin && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 bg-amber-50/70 p-3 rounded-2xl border-2 border-amber-300">
                 <div>
                   <label className="text-[10px] font-black uppercase text-amber-900 block mb-0.5">Номер потока (Админ):</label>
@@ -9593,15 +9601,6 @@ function getReportUrgency(report, reportState) {
                   >
                     💾 Сохранить
                   </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                <div className="text-xs text-slate-700">
-                  <span className="font-extrabold block text-slate-900">🔒 Параметры потока зафиксированы</span>
-                  <span className="text-[11px] text-slate-500">
-                    Даты и поток настраиваются Администратором в Панели управления
-                  </span>
                 </div>
               </div>
             )}
@@ -9663,16 +9662,16 @@ function getReportUrgency(report, reportState) {
                 <button
                   type="button"
                   onClick={() => onOpenStaffRosterModal && onOpenStaffRosterModal('roster')}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 group shadow-sm ${
-                    trainStatus === 'pending' || orgStatus === 'pending' || trainStatus === 'revision' || orgStatus === 'revision'
-                      ? 'bg-gradient-to-br from-amber-500 to-rose-600 text-white border-amber-300 ring-4 ring-amber-400/30 animate-pulse'
-                      : 'bg-gradient-to-br from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white border-slate-700'
-                  }`}
+                  className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white border border-slate-700 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 group shadow-sm"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">👥</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
-                      На смену: {selectedStaffCount} из {(staffMembers || []).length}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all ${
+                      isStaffAwaiting
+                        ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 animate-pulse shadow-xs'
+                        : 'bg-amber-400 text-slate-950'
+                    }`}>
+                      На смену: {selectedStaffCount} из {(staffMembers || []).length}{isStaffAwaiting ? (trainStatus === 'pending' || orgStatus === 'pending' ? ' · ⏳ Ждет решения' : ' · ↩️ На доработке') : ''}
                     </span>
                   </div>
                   <div>
@@ -9689,23 +9688,23 @@ function getReportUrgency(report, reportState) {
                 <button
                   type="button"
                   onClick={() => onOpenKidsTeamsModal && onOpenKidsTeamsModal('teams')}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 group shadow-sm ${
-                    kidsStatus === 'pending' || kidsStatus === 'revision'
-                      ? 'bg-gradient-to-br from-rose-600 to-amber-500 text-white border-amber-300 ring-4 ring-rose-400/30 animate-pulse'
-                      : 'bg-gradient-to-br from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white border-rose-500'
-                  }`}
+                  className="p-4 rounded-2xl bg-gradient-to-br from-rose-50/90 via-rose-50/60 to-amber-50/50 hover:bg-rose-100/70 text-slate-900 shadow-xs border-2 border-rose-200 transition-all cursor-pointer text-left flex flex-col justify-between gap-2.5 group"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">🧒</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-white text-rose-900 text-[10px] font-black">
-                      {(teamsConfig || []).length} команд · {(participants || []).length} детей
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all ${
+                      isKidsAwaiting
+                        ? 'bg-rose-600 text-white shadow-xs ring-2 ring-rose-400/50 animate-pulse'
+                        : 'bg-white text-rose-900 border border-rose-200 shadow-2xs'
+                    }`}>
+                      {(teamsConfig || []).length} команд · {(participants || []).length} детей{isKidsAwaiting ? (kidsStatus === 'pending' ? ' · ⏳ Ждет решения' : ' · ↩️ На доработке') : ''}
                     </span>
                   </div>
                   <div>
-                    <div className="font-black text-sm text-amber-200 group-hover:underline">
+                    <div className="font-black text-sm text-rose-950 group-hover:underline">
                       Все дети и Команды смены →
                     </div>
-                    <div className="text-[11px] text-rose-100 mt-0.5">
+                    <div className="text-[11px] text-slate-600 mt-0.5">
                       Строго однополые команды, 2 Кидс + 4 Пробуждение, здоровье и согласование
                     </div>
                   </div>
@@ -9722,7 +9721,7 @@ function getReportUrgency(report, reportState) {
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
                       pendingProposalsCount > 0 ? 'bg-rose-600 text-white animate-pulse' : 'bg-teal-700 text-white'
                     }`}>
-                      Предложений: {(rosterApprovals?.checklistProposals || []).length}
+                      Предложений: {(rosterApprovals?.checklistProposals || []).length}{pendingProposalsCount > 0 ? ' · ⏳ Ждет решения' : ''}
                     </span>
                   </div>
                   <div>
@@ -13317,123 +13316,90 @@ function Header({
     : `${shiftMeta?.awakeningShiftNumber || 'Поток №14'} · ${shiftMeta?.awakeningShiftName || 'Пробуждение: Сила Духа (13–17 лет)'}`;
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs no-print">
-      <div className="w-full max-w-[1760px] mx-auto px-3 sm:px-4 lg:px-6 py-2 space-y-1.5">
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs no-print w-full">
+      <div className="w-full max-w-[1760px] mx-auto px-2.5 sm:px-4 lg:px-6 py-1.5 space-y-1.5">
         
-        {/* ROW 1: BRANDING + STREAM PARAMETERS BANNER + QUICK ACTIONS */}
-        <div className="flex items-center justify-between gap-2 sm:gap-3 w-full">
+        {/* ROW 1: BRAND LOGO + NAVIGATION (IF INSIDE SECTION) + QUICK ACTIONS */}
+        <div className="flex items-center justify-between gap-2 w-full">
           
-          {/* Logo & Name (White Background, Red Letters, Proportional) */}
-          <div 
-            className="flex items-center gap-2.5 cursor-pointer shrink-0" 
-            onClick={() => setCurrentView('portal')}
-            title="Перейти на главный экран к разделам лагеря"
-          >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white p-1 flex items-center justify-center shadow-2xs border border-slate-200 shrink-0 hover:border-[#E11D48] transition-all">
-              <ZhanaUrpaqLogo className="w-full h-full object-contain" />
-            </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-base sm:text-lg font-black tracking-tight text-[#E11D48] font-serif uppercase">
+          {/* Left: Brand Identity / Back button */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div 
+              className="flex items-center gap-2 cursor-pointer group"
+              onClick={() => setCurrentView('portal')}
+              title="Перейти на главный экран к разделам лагеря"
+            >
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white p-1 flex items-center justify-center shadow-2xs border border-slate-200 shrink-0 group-hover:border-[#E11D48] transition-all">
+                <ZhanaUrpaqLogo className="w-full h-full object-contain" />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm sm:text-base font-black tracking-tight text-[#E11D48] font-serif uppercase leading-none">
                   Жаңа Ұрпақ
                 </span>
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 leading-none">
                   OS 360°
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-bold hidden 2xl:block mt-0.5 leading-none">
-                1 + 1 = 11 · Дисциплина чести
-              </p>
             </div>
+
+            {/* Back button + Active Section Badge when not in portal */}
+            {currentView !== 'portal' && (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('portal')}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs border border-slate-700 transition-all hover:scale-[1.02] cursor-pointer shrink-0"
+                  title="Вернуться на главный экран к разделам"
+                >
+                  <span className="text-xs font-black">←</span>
+                  <span className="hidden sm:inline">Назад</span>
+                </button>
+                {currentSectionInfo && (
+                  <div 
+                    className="px-2 py-0.5 rounded-lg text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs truncate hidden md:flex"
+                    style={{ backgroundColor: currentSectionInfo.color }}
+                  >
+                    <span>{currentSectionInfo.emoji}</span>
+                    <span className="truncate">{currentSectionInfo.title}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* STATIC STREAM INFO & TRACK SWITCHER (FULL TITLE, NO LOCK BADGE, ONLY KIDS / AWAKENING) */}
-          <div className="flex items-center gap-2.5 sm:gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-1 shadow-2xs shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm shrink-0 shadow-2xs">
-                {isKids ? '🧒' : '🔥'}
-              </div>
-              <div className="flex flex-col justify-center">
-                {/* Row 1: Full Title without truncation, without lock badge */}
-                <div className="flex items-center leading-tight">
-                  <span className="text-xs font-black text-slate-900 whitespace-nowrap">
-                    {currentShiftTitle}
-                  </span>
-                </div>
-                {/* Row 2: Clean dates & current day */}
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold leading-tight mt-0.5">
-                  <span className="text-slate-700 whitespace-nowrap">📅 {formattedDateRange}</span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-amber-800 font-black whitespace-nowrap">День {shiftMeta?.currentDay || 4} из 7</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="h-6 w-px bg-slate-200 shrink-0 mx-0.5" />
-
-            {/* Track Switcher (Only 2 options: 🧒 Кидс | 🔥 Пробуждение) */}
-            <div className="flex items-center p-0.5 bg-white rounded-lg border border-slate-200 shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveTrack('kids')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isKids
-                    ? 'bg-amber-400 text-slate-950 shadow-2xs font-black'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-                title="Поток Кидс (8–12 лет)"
-              >
-                <span>🧒</span>
-                <span>Кидс</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTrack('awakening')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  !isKids
-                    ? 'bg-rose-700 text-white shadow-2xs font-black'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-                title="Поток Пробуждение (13–17 лет)"
-              >
-                <span>🔥</span>
-                <span>Пробуждение</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Actions Toolbar */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            
+          {/* Right: Quick Actions Toolbar */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* 📅 Расписание дня (в моменте) */}
             <button
+              type="button"
               onClick={onOpenDaySchedule}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black shadow-2xs border border-amber-500 transition-all cursor-pointer hover:scale-[1.02] shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.2 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black shadow-2xs border border-amber-500 transition-all cursor-pointer hover:scale-[1.02] shrink-0"
               title="Открыть поминутное расписание смены и узнать, что идет прямо сейчас"
             >
               <span>📅</span>
-              <span className="font-black whitespace-nowrap">Расписание</span>
+              <span className="hidden sm:inline font-black">Расписание</span>
               <span className="hidden xl:inline-block px-1 py-0.2 bg-slate-950 text-amber-300 rounded text-[9px] font-mono font-bold">
                 в моменте
               </span>
             </button>
 
-            {/* 📚 Книга ЖУ: Стандарты & Регламенты */}
+            {/* 📚 Книга ЖУ */}
             <button
+              type="button"
               onClick={onGoToWiki}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all border border-slate-300 cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all border border-slate-300 cursor-pointer shrink-0"
               title="База знаний: 28 регламентов, 12 красных линий, 10 протоколов ЧП"
             >
               <span>📚</span>
-              <span className="hidden md:inline whitespace-nowrap">Книга ЖУ</span>
+              <span className="hidden md:inline">Книга ЖУ</span>
             </button>
 
             {/* Urgent Alert Pill */}
             {myUrgentReports.length > 0 && (
               <button
+                type="button"
                 onClick={() => onOpenReport(myUrgentReports[0])}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-2xs animate-pulse cursor-pointer shrink-0"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-2xs animate-pulse cursor-pointer shrink-0"
                 title="Срочно сдать отчет вашему руководителю!"
               >
                 <span>⚠️</span>
@@ -13449,7 +13415,8 @@ function Header({
               <select
                 value={selectedRoleId}
                 onChange={(e) => setSelectedRoleId(e.target.value)}
-                className="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold py-1.5 pl-6 pr-5 rounded-xl border border-slate-300 shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all w-[125px] sm:w-[155px] xl:w-[170px] truncate"
+                className="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold py-1 sm:py-1.2 pl-5 sm:pl-6 pr-4 sm:pr-5 rounded-lg border border-slate-300 shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all max-w-[110px] sm:max-w-[150px] md:max-w-[170px] truncate"
+                title="Сменить роль сотрудника"
               >
                 <optgroup label="👑 Руководство лагеря">
                   <option value="founder">👑 Основатель (Асхат Абжанов)</option>
@@ -13469,15 +13436,16 @@ function Header({
               <span className="absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs">
                 {currentRole ? currentRole.emoji : '👤'}
               </span>
-              <span className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[8px]">
+              <span className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[8px]">
                 ▼
               </span>
             </div>
 
-            {/* 🛠️ Админка & Права (Суперадмин) */}
+            {/* 🛠️ Админка & Права */}
             <button
+              type="button"
               onClick={() => setCurrentView('admin')}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 currentView === 'admin'
                   ? 'bg-purple-900 text-amber-300 ring-2 ring-purple-500 shadow-2xs'
                   : 'bg-slate-800 hover:bg-slate-900 text-amber-300 shadow-2xs'
@@ -13490,38 +13458,61 @@ function Header({
           </div>
         </div>
 
-        {/* ROW 2: BREADCRUMB / BACK BUTTON (WHEN NOT IN PORTAL) */}
-        {currentView !== 'portal' && (
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentView('portal')}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs border border-slate-700 transition-all hover:scale-[1.02] cursor-pointer shrink-0"
-                title="Вернуться на главный экран к разделам"
-              >
-                <span className="text-sm font-black">←</span>
-                <span>Назад к разделам</span>
-              </button>
-
-              {currentSectionInfo && (
-                <div 
-                  className="px-2.5 py-1 rounded-lg text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs truncate"
-                  style={{ backgroundColor: currentSectionInfo.color }}
-                >
-                  <span>{currentSectionInfo.emoji}</span>
-                  <span className="truncate">{currentSectionInfo.title}</span>
-                </div>
-              )}
+        {/* ROW 2: STATIC STREAM INFO & TRACK SWITCHER (FULL WIDTH, NO CUTOFF, ONLY KIDS / AWAKENING) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3 bg-slate-50/90 border border-slate-200/90 rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.2 w-full">
+          
+          {/* Left: Stream Info with Icon + Full title + Dates */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs sm:text-sm shrink-0 shadow-2xs">
+              {isKids ? '🧒' : '🔥'}
             </div>
-
-            <div className="text-[11px] text-slate-500 font-medium hidden md:flex items-center gap-1.5">
-              <span>Текущая роль:</span>
-              <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                {currentRole ? `${currentRole.emoji} ${currentRole.title}` : ''}
+            
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 leading-tight text-xs">
+              {/* Full Shift Title without cutting off */}
+              <span className="font-black text-slate-900">
+                {currentShiftTitle}
               </span>
+              
+              {/* Dates & Day counter */}
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-bold">
+                <span className="hidden sm:inline text-slate-300">·</span>
+                <span className="text-slate-700 whitespace-nowrap">📅 {formattedDateRange}</span>
+                <span className="text-slate-300">·</span>
+                <span className="text-amber-800 font-black whitespace-nowrap">День {shiftMeta?.currentDay || 4} из 7</span>
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Right: Program Switcher (Только 🧒 Кидс | 🔥 Пробуждение) */}
+          <div className="flex items-center p-0.5 bg-white rounded-lg border border-slate-200 shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTrack('kids')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                isKids
+                  ? 'bg-amber-400 text-slate-950 shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+              title="Поток Кидс (8–12 лет)"
+            >
+              <span>🧒</span>
+              <span>Кидс</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTrack('awakening')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                !isKids
+                  ? 'bg-rose-700 text-white shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+              title="Поток Пробуждение (13–17 лет)"
+            >
+              <span>🔥</span>
+              <span>Пробуждение</span>
+            </button>
+          </div>
+        </div>
 
       </div>
     </header>
@@ -13543,6 +13534,8 @@ function Header({
       onOpenBrandedDoc,
       onOpenChecklists,
       staffMembers,
+      participants,
+      teamsConfig,
       onOpenPostCampReport,
       onOpenEmployeeDossier,
       onBackToSections,
@@ -13582,6 +13575,17 @@ function Header({
       const totalTasks = campTasks.length;
       const doneTasks = campTasks.filter(t => t.status === 'Готово').length;
       const overallPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+      const isStaffWaiting = rosterApprovals && (
+        rosterApprovals.trainingStaff?.status === 'pending' ||
+        rosterApprovals.orgStaff?.status === 'pending' ||
+        rosterApprovals.trainingStaff?.status === 'revision' ||
+        rosterApprovals.orgStaff?.status === 'revision'
+      );
+      const isKidsWaiting = rosterApprovals && (
+        rosterApprovals.kidsTeams?.status === 'pending' ||
+        rosterApprovals.kidsTeams?.status === 'revision'
+      );
 
       // Find all escalated and overdue reports for Founder
       const escalatedReports = reportsConfig.filter(r => {
@@ -13632,10 +13636,18 @@ function Header({
               shiftMeta={shiftMeta}
               setShiftMeta={setShiftMeta}
               selectedRoleId="founder"
+              campStartDate={campStartDate}
               setCampStartDate={setCampStartDate}
               showToast={showToast}
+              staffMembers={staffMembers}
+              participants={participants}
+              teamsConfig={teamsConfig}
+              rosterApprovals={rosterApprovals}
+              onOpenStaffRosterModal={onOpenStaffRosterModal}
+              onOpenKidsTeamsModal={onOpenKidsTeamsModal}
               onOpenProposalsModal={onOpenProposalsModal}
-              pendingProposalsCount={(rosterApprovals?.checklistProposals || []).filter(p => p.status === 'pending').length}
+              onOpenChecklists={onOpenChecklists}
+              onOpenPostCampReport={onOpenPostCampReport}
             />
           )}
 
@@ -13679,6 +13691,11 @@ function Header({
                   >
                     <span>👥</span>
                     <span>Весь штат (Утверждение)</span>
+                    {isStaffWaiting && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black animate-pulse">
+                        ⏳ Ждет
+                      </span>
+                    )}
                   </button>
                 )}
 
@@ -13689,6 +13706,11 @@ function Header({
                   >
                     <span>🧒</span>
                     <span>Все дети и Команды</span>
+                    {isKidsWaiting && (
+                      <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse">
+                        ⏳ Ждет
+                      </span>
+                    )}
                   </button>
                 )}
 
@@ -24390,6 +24412,8 @@ function ShiftsArchiveView({
                 onOpenBrandedDoc={(doc) => setBrandedDocData(doc)}
                 onOpenChecklists={() => setIsChecklistOpen(true)}
                 staffMembers={staffMembers}
+                participants={participants}
+                teamsConfig={teamsConfig}
                 onOpenPostCampReport={() => setIsPostCampReportOpen(true)}
                 onOpenEmployeeDossier={setSelectedEmployeeForDossier}
                 onBackToSections={() => setCurrentView('portal')}
